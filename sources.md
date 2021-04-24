@@ -1,6 +1,5 @@
 ## Audio Sources
 If you don't want to host your own audio, you can always use the methods we provide.\
-/play/[plot](#plot)/[key](#key)/[username](#username)/[title](#title)/[track](#track)/[loop](#loop)\
 ### TTS
 We provide free access to the basic (Google Translate style) TTS service from Google. The URL format is as follows:\
 /tts/[text].mp3\
