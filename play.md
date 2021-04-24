@@ -1,7 +1,7 @@
 ## Playing Audio
 Playing audio with Project: Audio is easy. The URL format is as follows:\
 /play/[plot](#plot)/[key](#key)/[username](#username)/[title](#title)/[track](#track)/[loop](#loop)\
-The [audio source](sources) should be placed in the body.\
+The [audio source](sources) should be placed in the body.
 ## Plot
 
 This must be the Plot ID assigned to your key. If it isn't, the request will be denied.
