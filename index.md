@@ -7,3 +7,4 @@ Coming Soon
 ## API Docs
 [Playing Audio](play)
 [Stopping Audio](stop)
+[Audio Sources](sources)
