@@ -21,7 +21,7 @@ This is the title that will show up in the web interface. Preferably, this will 
 
 ## Track
 
-This is not shown to the user, and acts as the audio's group. This can be anything, yet the words "music", "sfx" and "speech" are preferred.
+This is not shown to the user, and acts as the audio's group. This can be anything, yet the words "music", "sfx" and "dialogue" are preferred.
 
 ## Loop
 
