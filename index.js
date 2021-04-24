@@ -2,7 +2,7 @@ const express = require("express");
 const bodyParser = require('body-parser');
 const app = express();
 const expressWs = require("express-ws")(app);
-const ytdl = require("ytdl-core");
+const ytdl = require("youtube-dl-exec");
 const path = require("path");
 const compression = require('compression');
 const ffmpeg = require("ffmpeg");
@@ -10,6 +10,8 @@ const webhook = require("webhook-discord");
 const googleTTS = require('google-tts-api');
 const { http, https } = require('follow-redirects');
 var secrets = require('./secret');
+var os = require('node-os-utils');
+const request = require('request');
 
 const connectionHook = new webhook.Webhook(secrets.requestSecret("connectionHook"));
 const playbackHook = new webhook.Webhook(secrets.requestSecret("playbackHook"));
@@ -130,42 +132,53 @@ app.get("/glados/:text.mp3", (req,res) => {
 
 app.ws("/ws", function(ws, req, res) {
   ws.uuid = getParameterByName("username",req.url);
+  ws.on("message", (info) => {
+    var data = JSON.parse(info);
+    if(data.action === "getStats") {
+      os.cpu.usage()
+  .then(cpuUsage => {
+    os.mem.info()
+  .then(memUsage => {
+    ws.send(JSON.stringify({
+        users: wss.clients.size,
+        cpuPerc: cpuUsage,
+        memPerc: 100-memUsage.freeMemPercentage,
+      }))
+  })
+  })
+    }
+  })
 });
 
-app.get("/youtube/:videoId", function(req, res) {
-  var requestUrl = "http://youtube.com/watch?v=" + req.params.videoId;
-  try {
-    ytdl(requestUrl,{ filter: "audioonly", filter: format => (format.hasAudio) && (!format.hasVideo)}).pipe(res);
-  } catch (exception) {
-    res.status(500);
-  }
+app.get("/yt/:id/audio.mp3", async (req, res) => { 
+const uri = "https://www.youtube.com/watch?v="+req.params.id; 
+ytdl(uri, {
+  dumpJson: true,
+  noWarnings: true,
+  noCallHome: true,
+  noCheckCertificate: true,
+  preferFreeFormats: true,
+  youtubeSkipDashManifest: true,
+  format: "bestaudio",
+})
+  .then(output => {
+    request(output.formats[0].url).pipe(res);
+  });
 });
 
-app.get("/youtube/:videoId.mp3", function(req, res) {
-  var requestUrl = "http://youtube.com/watch?v=" + req.params.videoId;
-  try {
-    ytdl(requestUrl,{ filter: "audioonly", filter: format => (format.hasAudio) && (!format.hasVideo) }).pipe(res);
-  } catch (exception) {
-    res.status(500);
-  }
+app.get("/youtube/:id/audio.mp3", async (req, res) => { 
+res.redirect("/yt/"+req.params.id+"/audio.mp3")
 });
 
-app.post("/play/:plot/:key/:username/:title/:track/:loop/:depSpatial", function(req, res) {
+app.post("/play/:plot/:key/:username/:title/:track/:loop", function(req, res) {
   var body = req.body;
-  req.body = req.body.replace("http://www.youtube.com/watch?v=","youtube/");
-  req.body = req.body.replace("http://youtube.com/watch?v=","youtube/");
-  req.body = req.body.replace("https://www.youtube.com/watch?v=","youtube/");
-  req.body = req.body.replace("https://youtube.com/watch?v=","youtube/");
+  req.body = req.body.replace(/http(.*):\/\/(.*)youtube\.com\/watch\?v=(.*)/g,"youtube/$3/audio.mp3");
+  req.body = req.body.replace(/&(.*)/g, "");
   if(req.body != body) {
     req.body = req.body + ".mp3";
   }
   if (req.params.plot in auth) {
     if (auth[req.params.plot].key == req.params.key) {
-        if(req.params.spatial == "true") {
-          playbackHook.warn("Plot "+req.params.plot+" - User "+req.params.username,"Tried to play "+req.body+" -  Spatial Audio is deprecated.");
-      res.sendStatus(403);
-      return;
-        }
       var toLoop = false;
       if(req.params.loop == "true") {
         toLoop = true;
@@ -180,10 +193,6 @@ app.post("/play/:plot/:key/:username/:title/:track/:loop/:depSpatial", function(
               title: req.params.title,
               plot: req.params.plot,
               track: req.params.track,
-              spatial: req.params.spatial,
-              xPos: parseFloat(req.params.x),
-              yPos: parseFloat(req.params.y),
-              zPos: parseFloat(req.params.z),
               loop: toLoop
             })
           );
@@ -197,10 +206,6 @@ app.post("/play/:plot/:key/:username/:title/:track/:loop/:depSpatial", function(
                 title: req.params.title,
                 plot: req.params.plot,
                 track: req.params.track,
-                spatial: req.params.spatial,
-                xPos: req.params.x,
-                yPos: req.params.y,
-                zPos: req.params.z,
                 loop: toLoop
               })
             );
