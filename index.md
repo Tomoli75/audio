@@ -7,4 +7,3 @@ Coming Soon
 ## API Docs
 [Playing Audio](play)
 [Stopping Audio](stop)
-[Spatial Audio](position)
