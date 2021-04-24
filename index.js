@@ -7,6 +7,8 @@ const path = require("path");
 const compression = require('compression');
 const ffmpeg = require("ffmpeg");
 const webhook = require("webhook-discord");
+const googleTTS = require('google-tts-api');
+const { http, https } = require('follow-redirects');
 var secrets = require('./secret');
 
 const connectionHook = new webhook.Webhook(secrets.requestSecret("connectionHook"));
@@ -16,6 +18,39 @@ const errorHook = new webhook.Webhook(secrets.requestSecret('errorHook'));
 var wss = expressWs.getWss("/");
 app.use(bodyParser.text());
 app.use(compression());
+
+let demoLogger = (req, res, next) => {
+  let current_datetime = new Date();
+  let formatted_date =
+    current_datetime.getFullYear() +
+    "-" +
+    (current_datetime.getMonth() + 1) +
+    "-" +
+    current_datetime.getDate() +
+    " " +
+    current_datetime.getHours() +
+    ":" +
+    current_datetime.getMinutes() +
+    ":" +
+    current_datetime.getSeconds();
+  let method = req.method;
+  let url = req.url;
+  let status = res.statusCode;
+  let log = `[${formatted_date}] ${method}:${url} ${status}`;
+  console.log(log);
+  next();
+};
+
+app.use(demoLogger);
+
+function getParameterByName(name, url = window.location.href) {
+    name = name.replace(/[\[\]]/g, '\\$&');
+    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+}
 
 var auth = secrets.requestSecret('auth');
 
@@ -45,8 +80,56 @@ app.get("/", (request, response) => {
   response.sendFile(__dirname + "/views/index.html");
 });
 
-app.ws("/ws", function(ws, req) {
-  ws.uuid = req.url.substring(24);
+app.get("/secrets.json", (req,res) => {
+  res.redirect("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+})
+
+app.get("/keys.json", (req,res) => {
+  res.redirect("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+})
+
+app.get("/tts/:text.mp3", (req,res) => {
+  googleTTS(req.params.text, 'en', 1) // speed normal = 1 (default), slow = 0.24
+  .then((url) => {
+    https.get(url, (resp) => {
+      res.writeHead(resp.statusCode);
+    resp.on("data", (chunk) => {
+      res.write(chunk)
+    })
+    resp.on('close', () => {
+        res.end();
+      });
+
+      resp.on('end', () => {
+        res.end();
+      });
+  })
+  })
+  .catch((err) => {
+    console.error(err.stack);
+  });
+})
+
+app.get("/glados/:text.mp3", (req,res) => {
+  // https://glados.c-net.org/generate?text=
+  var url = "https://glados.c-net.org/generate?text="+encodeURIComponent(req.params.text);
+  https.get(url, (resp) => {
+      res.writeHead(resp.statusCode);
+    resp.on("data", (chunk) => {
+      res.write(chunk)
+    })
+    resp.on('close', () => {
+        res.end();
+      });
+
+      resp.on('end', () => {
+        res.end();
+      });
+  })
+})
+
+app.ws("/ws", function(ws, req, res) {
+  ws.uuid = getParameterByName("username",req.url);
 });
 
 app.get("/youtube/:videoId", function(req, res) {
@@ -67,61 +150,7 @@ app.get("/youtube/:videoId.mp3", function(req, res) {
   }
 });
 
-app.post("/pos/:plot/:key/:username/:x/:y/:z", function(req, res) {
-  if (req.params.plot in auth) {
-    if (auth[req.params.plot].key == req.params.key) {
-      if(auth[req.params.plot].spatial) {
-      wss.clients.forEach(function each(client) {
-        if (client.uuid == req.params.username) {
-          client.send(
-            JSON.stringify({
-              action: "pos",
-              plot: req.params.plot,
-              xPos: parseFloat(req.params.x) * -1,
-              yPos: parseFloat(req.params.y) * -1,
-              zPos: parseFloat(req.params.z) * -1
-            })
-          );
-        }
-        if (req.params.username == "broadcast") {
-          if (req.params.plot === 0) {
-            client.send(
-              JSON.stringify({
-                action: "pos",
-                plot: req.params.plot,
-                xPos: parseFloat(req.params.x) * -1,
-                yPos: parseFloat(req.params.y) * -1,
-                zPos: parseFloat(req.params.z) * -1
-              })
-            );
-          } else {
-            //positionHook.warn("Plot "+req.params.plot+" - User "+req.params.username,"Tried to broadcast update position - Unauthorized.");
-            res.sendStatus(403);
-            return;
-          }
-        }
-      });
-      //positionHook.info("Plot "+req.params.plot+" - User "+req.params.username,"Tried to update position - Success.");
-      res.sendStatus(200);
-      return;
-      } else {
-        //positionHook.warn("Plot "+req.params.plot+" - User "+req.params.username,"Tried to update position - Spatial not permitted.");
-      res.sendStatus(403);
-      return;
-      }
-    } else {
-      //position.warn("Plot "+req.params.plot+" - User "+req.params.username,"Tried to update position - Key invalid.");
-      res.sendStatus(403);
-      return;
-    }
-  } else {
-    //positionHook.warn("Plot "+req.params.plot+" - User "+req.params.username,"Tried to update position - Plot invalid.");
-    res.sendStatus(403);
-    return;
-  }
-});
-
-app.post("/play/:plot/:key/:username/:title/:track/:loop/:spatial/:x?/:y?/:z?", function(req, res) {
+app.post("/play/:plot/:key/:username/:title/:track/:loop/:depSpatial", function(req, res) {
   var body = req.body;
   req.body = req.body.replace("http://www.youtube.com/watch?v=","youtube/");
   req.body = req.body.replace("http://youtube.com/watch?v=","youtube/");
@@ -132,13 +161,11 @@ app.post("/play/:plot/:key/:username/:title/:track/:loop/:spatial/:x?/:y?/:z?", 
   }
   if (req.params.plot in auth) {
     if (auth[req.params.plot].key == req.params.key) {
-      if((auth[req.params.plot].spatial) && (req.params.spatial == "true")) {} else {
         if(req.params.spatial == "true") {
-          playbackHook.warn("Plot "+req.params.plot+" - User "+req.params.username,"Tried to play "+req.body+" - Spatial not permitted.");
+          playbackHook.warn("Plot "+req.params.plot+" - User "+req.params.username,"Tried to play "+req.body+" -  Spatial Audio is deprecated.");
       res.sendStatus(403);
       return;
         }
-      }
       var toLoop = false;
       if(req.params.loop == "true") {
         toLoop = true;
