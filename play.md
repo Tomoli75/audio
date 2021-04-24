@@ -1,6 +1,6 @@
 ## Playing Audio
 Playing audio with Project: Audio is easy. The URL format is as follows:
-/play/[plot](#plot)/[key](#key)/[username](#username)/[title](#title)/[track](#track)/[loop](#loop)/[spatial](#spatial)/[x?](#x)/[y?](#y)/[z?](#z)
+/play/[plot](#plot)/[key](#key)/[username](#username)/[title](#title)/[track](#track)/[loop](#loop)
 The **Direct Audio URL** should be placed in the body.
 
 ## Plot
@@ -26,19 +26,3 @@ This is not shown to the user, and acts as the audio's group. This can be anythi
 ## Loop
 
 This should be either true or false. If true, the audio will loop.
-
-## Spatial
-
-This should be false if your key does not have access to spatial audio. If it does, this can be true or false.
-
-### X
-
-Required if Spatial is true. This is where the audio should play from, world coordinates are recommended for usage yet any coordinate can be used.
-
-### Y
-
-Required if Spatial is true. This is where the audio should play from, world coordinates are recommended for usage yet any coordinate can be used.
-
-### Z
-
-Required if Spatial is true. This is where the audio should play from, world coordinates are recommended for usage yet any coordinate can be used.
