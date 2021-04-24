@@ -1,5 +1,6 @@
 # Stopping Audio
-Stopping audio with Project: Audio is easy. The URL format is as follows: /stop/[plot](#plot)/[key](#key)/[username](#username)/[track](#track)
+Stopping audio with Project: Audio is easy. The URL format is as follows:\
+/stop/[plot](#plot)/[key](#key)/[username](#username)/[track](#track)\
 
 ## Plot
 
