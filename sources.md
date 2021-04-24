@@ -1,5 +1,7 @@
 ## Audio Sources
-If you don't want to host your own audio, you can always use the methods we provide.\
+There are many ways to provide audio directly to P:A.\
+### Direct URL
+This should be provided by you, and is perfect for maximum customisation. Just provide the web-accessable url, ending with a file extention like .mp3, as part of the request.\
 ### TTS
 We provide free access to the basic (Google Translate style) TTS service from Google. The URL format is as follows:\
 /tts/[text].mp3\
