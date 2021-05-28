@@ -3,6 +3,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
 document.getElementById("in-game-name").innerHTML = encodeURIComponent(new URLSearchParams(window.location.search).get("username") || "Player");
 document.getElementById("in-game-head").src = "https://mc-heads.net/head/" + encodeURIComponent(new URLSearchParams(window.location.search).get("username") || "MHF_Question");
 })
+if(encodeURIComponent(new URLSearchParams(window.location.search).get("username") || "Player") == "Player") {
+document.getElementById("status-message").innerHTML = 'This is Project Audio! A project to allow DiamondFire plots to play music or other sound effects straight from their plots! Join the discord via <a href="https://discord.gg/UJ98SjP">https://discord.gg/UJ98SjP</a>'
+}
       const socketProtocol =
         window.location.protocol === "https:" ? "wss:" : "ws:";
       const echoSocketUrl =
